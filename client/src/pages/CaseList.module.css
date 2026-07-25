@@ -1,0 +1,89 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  flex: 1;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1.75rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.title { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.5px; }
+.sub { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem; }
+
+.statsRow {
+  display: flex;
+  gap: 1.5rem;
+}
+.stat { display: flex; flex-direction: column; align-items: flex-end; }
+.statValue { font-size: 1.3rem; font-weight: 700; }
+.statLabel { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.searchWrap { position: relative; flex: 1; min-width: 200px; }
+.searchIcon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
+.search {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem 0.6rem 2.25rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search::placeholder { color: var(--text-dim); }
+.search:focus { border-color: var(--accent); }
+
+.filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.select:focus { border-color: var(--accent); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1rem;
+}
+
+.loading { color: var(--text-muted); padding: 3rem; text-align: center; }
+
+.empty {
+  text-align: center;
+  padding: 5rem 2rem;
+  color: var(--text-muted);
+}
+.emptyIcon { font-size: 3rem; margin-bottom: 1rem; }
+.emptyLink {
+  display: inline-block;
+  margin-top: 0.75rem;
+  color: var(--accent);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 600px) {
+  .header { flex-direction: column; align-items: flex-start; }
+  .statsRow { flex-direction: row; }
+  .stat { align-items: flex-start; }
+}

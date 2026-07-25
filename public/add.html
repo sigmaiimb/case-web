@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Case — CaseWeb</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">CaseWeb</div>
+    <div class="nav-links">
+      <a href="index.html">Browse Cases</a>
+      <a href="add.html" class="active">+ Add Case</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header">
+      <h1 id="formTitle">Add Case Experience</h1>
+      <p>Document your consulting interview case</p>
+    </div>
+
+    <form id="caseForm" class="case-form">
+      <input type="hidden" id="caseId">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firm">Firm <span class="required">*</span></label>
+          <input type="text" id="firm" placeholder="e.g. McKinsey, BCG, Bain" required>
+        </div>
+        <div class="form-group">
+          <label for="round">Round</label>
+          <select id="round">
+            <option value="">Select round</option>
+            <option>Round 1</option>
+            <option>Round 2</option>
+            <option>Round 3</option>
+            <option>Final Round</option>
+            <option>Partner Round</option>
+            <option>Practice</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="industry">Industry</label>
+          <input type="text" id="industry" placeholder="e.g. Healthcare, Retail, Banking" list="industryList">
+          <datalist id="industryList">
+            <option value="Healthcare">
+            <option value="Retail & Consumer">
+            <option value="Financial Services">
+            <option value="Technology">
+            <option value="Energy">
+            <option value="Manufacturing">
+            <option value="Telecom">
+            <option value="Education">
+            <option value="Government & Public Sector">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="case_type">Case Type</label>
+          <select id="case_type">
+            <option value="">Select type</option>
+            <option>Profitability</option>
+            <option>Market Entry</option>
+            <option>M&A / Due Diligence</option>
+            <option>Market Sizing</option>
+            <option>Growth Strategy</option>
+            <option>Cost Reduction</option>
+            <option>Pricing</option>
+            <option>Operations</option>
+            <option>PE / Investment</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="date">Date</label>
+          <input type="date" id="date">
+        </div>
+        <div class="form-group">
+          <label for="outcome">Outcome</label>
+          <select id="outcome">
+            <option value="">Select outcome</option>
+            <option value="Pass">Pass</option>
+            <option value="Fail">Fail</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="problem_statement">Problem Statement</label>
+        <textarea id="problem_statement" rows="3" placeholder="Describe the case prompt / client situation..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="my_approach">My Approach / Framework</label>
+        <textarea id="my_approach" rows="4" placeholder="How did you structure and approach the case?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="key_insights">Key Insights & Recommendations</label>
+        <textarea id="key_insights" rows="4" placeholder="What were the key findings and what did you recommend?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes / Feedback</label>
+        <textarea id="notes" rows="3" placeholder="Interviewer feedback, what went well, what to improve..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <a href="index.html" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Save Case</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="form.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Base — clean off-white */
+  --bg: #F2F4F9;
+
+  /* Glass surfaces */
+  --surface:  rgba(255,255,255,0.72);
+  --surface2: rgba(255,255,255,0.52);
+  --surface3: rgba(255,255,255,0.90);
+
+  /* Glass borders */
+  --border:       rgba(43,79,232,0.10);
+  --border2:      rgba(43,79,232,0.20);
+  --glass-top:    rgba(255,255,255,0.96);
+  --glass-left:   rgba(255,255,255,0.80);
+  --glass-bottom: rgba(168,174,210,0.28);
+
+  /* Neomorphic shadows — light surface */
+  --neo-card:
+    8px 8px 22px rgba(162,168,210,0.52),
+    -5px -5px 14px rgba(255,255,255,0.94);
+  --neo-raise:
+    5px 5px 14px rgba(162,168,210,0.50),
+    -3px -3px 9px rgba(255,255,255,0.92);
+  --neo-raise-sm:
+    3px 3px 9px rgba(162,168,210,0.44),
+    -2px -2px 6px rgba(255,255,255,0.90);
+  --neo-inset:
+    inset 4px 4px 10px rgba(162,168,210,0.46),
+    inset -3px -3px 8px rgba(255,255,255,0.88);
+  --neo-inset-focus:
+    inset 5px 5px 12px rgba(162,168,210,0.52),
+    inset -3px -3px 9px rgba(255,255,255,0.85);
+
+  /* Pantone-inspired accent palette */
+  --accent:       #2B4FE8;   /* Pantone 2736 C — clean royal blue */
+  --accent-dim:   rgba(43,79,232,0.09);
+  --accent-hover: #1A3CC0;
+  --accent-glow:  rgba(43,79,232,0.18);
+
+  /* Text */
+  --text:       #1A1D35;
+  --text-muted: #575E88;
+  --text-dim:   #A2A8C2;
+
+  /* Status — Pantone-calibrated */
+  --pass:       #059669;   /* Pantone 356 C */
+  --pass-bg:    rgba(5,150,105,0.08);
+  --fail:       #DC2626;   /* Pantone 485 C */
+  --fail-bg:    rgba(220,38,38,0.07);
+  --pending:    #D97706;   /* Pantone 7409 C */
+  --pending-bg: rgba(217,119,6,0.08);
+
+  /* Radius — slightly tighter for minimalist feel */
+  --radius-sm: 8px;
+  --radius:    13px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+}
+
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 65% 50% at 12% 5%,  rgba(43,79,232,0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 88% 92%, rgba(43,79,232,0.05) 0%, transparent 65%);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+#root { min-height: 100vh; }
+button { font-family: inherit; cursor: pointer; }
+a { text-decoration: none; color: inherit; }
+textarea, input, select { font-family: inherit; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(43,79,232,0.18);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(43,79,232,0.32);
+}
+
+::selection {
+  background: rgba(43,79,232,0.14);
+  color: var(--text);
+}

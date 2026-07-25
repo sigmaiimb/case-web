@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaseWeb — Consulting Case Experiences</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">CaseWeb</div>
+    <div class="nav-links">
+      <a href="index.html" class="active">Browse Cases</a>
+      <a href="add.html">+ Add Case</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header">
+      <h1>Case Library</h1>
+      <p>Your consulting interview case experiences</p>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="Search firm, problem, insights..." class="search-input">
+      <select id="filterIndustry"><option value="">All Industries</option></select>
+      <select id="filterType"><option value="">All Types</option></select>
+      <select id="filterOutcome">
+        <option value="">All Outcomes</option>
+        <option value="Pass">Pass</option>
+        <option value="Fail">Fail</option>
+        <option value="Pending">Pending</option>
+      </select>
+    </div>
+
+    <div id="stats" class="stats-bar"></div>
+    <div id="caseGrid" class="case-grid"></div>
+    <div id="emptyState" class="empty-state" style="display:none">
+      <div class="empty-icon">📂</div>
+      <p>No cases found. <a href="add.html">Add your first case</a></p>
+    </div>
+  </main>
+
+  <!-- Detail Modal -->
+  <div id="modal" class="modal" style="display:none">
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle"></h2>
+        <div class="modal-actions">
+          <button onclick="editCase(currentCaseId)" class="btn btn-secondary">Edit</button>
+          <button onclick="deleteCase(currentCaseId)" class="btn btn-danger">Delete</button>
+          <button onclick="closeModal()" class="btn-close">×</button>
+        </div>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
