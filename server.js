@@ -390,7 +390,7 @@ app.delete('/api/casebook/diagrams/:id', requireAdmin, (req, res) => {
 const clientBuild = path.join(__dirname, 'client', 'dist');
 if (fs.existsSync(clientBuild)) {
   app.use(express.static(clientBuild));
-  app.get('*', (req, res) => res.sendFile(path.join(clientBuild, 'index.html')));
+  app.use((req, res) => res.sendFile(path.join(clientBuild, 'index.html')));
 }
 
 const PORT = process.env.PORT || 3000;
