@@ -228,7 +228,7 @@ function DiagramSection({ caseId, diagrams }) {
         diagrams.map(d => (
           <div key={d.diagram_id} className={styles.diagramWrap}>
             {d.framework_name && <p className={styles.frameworkLabel}>{d.framework_name}</p>}
-            <img src={`/diagrams/${d.image_path}`} alt="Framework diagram" className={styles.diagram} />
+            <img src={d.image_path} alt="Framework diagram" className={styles.diagram} />
             {isAdmin && (
               <button className={styles.diagramDelete} onClick={() => handleDelete(d.diagram_id)} title="Remove diagram">
                 <X size={12} /> Remove

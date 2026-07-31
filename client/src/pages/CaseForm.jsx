@@ -328,8 +328,8 @@ export default function CaseForm() {
           <Field label="Framework Diagram">
             {diagrams.map(d => (
               <div key={d.diagram_id} className={styles.existingDiagram}>
-                <img src={`/diagrams/${d.image_path}`} alt="diagram" className={styles.diagramThumb} />
-                <span className={styles.diagName}>{d.image_path}</span>
+                <img src={d.image_path} alt="diagram" className={styles.diagramThumb} />
+                <span className={styles.diagName}>{d.image_path.split('/').pop()}</span>
               </div>
             ))}
             {previewUrl ? (
