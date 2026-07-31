@@ -1,21 +1,15 @@
 // One-off migration: local SQLite (cases.db, casebook.db, diagrams/) -> Supabase.
+// Prerequisite: run supabase/schema.sql once in the Supabase SQL Editor.
 // Run once: node scripts/migrate-to-supabase.js
 try { require('node:process').loadEnvFile(); } catch {}
 
 const fs = require('fs');
 const path = require('path');
-const { Client } = require('pg');
 const Database = require('better-sqlite3');
 const { supabaseAdmin } = require('../lib/supabase');
 
-const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@caseweb.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-
-if (!SUPABASE_DB_URL) {
-  console.error('Missing SUPABASE_DB_URL in .env');
-  process.exit(1);
-}
 
 function genPassword() {
   return Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6).toUpperCase() + Math.floor(10 + Math.random() * 90);
@@ -26,65 +20,75 @@ function mimeFor(filename) {
   return { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' }[ext] || 'application/octet-stream';
 }
 
-async function resyncSequence(pg, table, col) {
-  await pg.query(`SELECT setval(pg_get_serial_sequence('${table}', '${col}'), COALESCE((SELECT MAX(${col}) FROM ${table}), 1))`);
+async function assertSchemaApplied() {
+  const { error } = await supabaseAdmin.from('cases').select('case_id').limit(1);
+  if (error) {
+    console.error('Could not read the `cases` table from Supabase.');
+    console.error('Have you run supabase/schema.sql in the Supabase SQL Editor yet? (Dashboard -> SQL Editor -> New query -> paste -> Run)');
+    console.error('Underlying error:', error.message);
+    process.exit(1);
+  }
 }
 
-async function applySchema(pg) {
-  const sql = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'schema.sql'), 'utf8');
-  await pg.query(sql);
-  console.log('Schema applied.');
-}
-
-async function migratePersonalCases(pg, db) {
+async function migratePersonalCases(db) {
   const rows = db.prepare('SELECT * FROM cases').all();
+  let migrated = 0;
   for (const r of rows) {
-    await pg.query(
-      `INSERT INTO personal_cases (id, firm, round, industry, case_type, problem_statement, my_approach, key_insights, outcome, date, notes, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-      [r.id, r.firm, r.round, r.industry, r.case_type, r.problem_statement, r.my_approach, r.key_insights, r.outcome, r.date, r.notes, r.created_at]
-    );
+    const { error } = await supabaseAdmin.from('personal_cases').insert({
+      firm: r.firm, round: r.round, industry: r.industry, case_type: r.case_type,
+      problem_statement: r.problem_statement, my_approach: r.my_approach, key_insights: r.key_insights,
+      outcome: r.outcome, date: r.date, notes: r.notes, created_at: r.created_at,
+    });
+    if (error) { console.error(`Failed to migrate personal case "${r.firm}": ${error.message}`); continue; }
+    migrated++;
   }
-  if (rows.length) await resyncSequence(pg, 'personal_cases', 'id');
-  console.log(`Migrated ${rows.length} personal cases.`);
+  console.log(`Migrated ${migrated}/${rows.length} personal cases.`);
 }
 
-async function migrateCasebook(pg, cbdb) {
+async function migrateCasebookCases(cbdb) {
   const cases = cbdb.prepare('SELECT * FROM cases').all();
+  const caseIdMap = new Map(); // old case_id -> new case_id
+  let migrated = 0;
+
   for (const c of cases) {
-    await pg.query(
-      `INSERT INTO cases (case_id, case_title, case_type, category, difficulty, is_numerical, firm, page_number, case_statement, source_volume)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [c.case_id, c.case_title, c.case_type, c.category, c.difficulty, !!c.is_numerical, c.firm, c.page_number, c.case_statement, c.source_volume]
-    );
+    const { data, error } = await supabaseAdmin.from('cases').insert({
+      case_title: c.case_title, case_type: c.case_type, category: c.category, difficulty: c.difficulty,
+      is_numerical: !!c.is_numerical, firm: c.firm, page_number: c.page_number,
+      case_statement: c.case_statement, source_volume: c.source_volume,
+    }).select('case_id').single();
+    if (error) { console.error(`Failed to migrate case "${c.case_title}": ${error.message}`); continue; }
+    caseIdMap.set(c.case_id, data.case_id);
+    migrated++;
   }
+  console.log(`Migrated ${migrated}/${cases.length} casebook cases.`);
+  return caseIdMap;
+}
 
-  const dialogue = cbdb.prepare('SELECT * FROM case_dialogue').all();
-  for (const d of dialogue) {
-    await pg.query(
-      `INSERT INTO case_dialogue (dialogue_id, case_id, sequence_no, speaker, dialogue_text) VALUES ($1,$2,$3,$4,$5)`,
-      [d.dialogue_id, d.case_id, d.sequence_no, d.speaker, d.dialogue_text]
-    );
+async function migrateDialogueAndNotes(cbdb, caseIdMap) {
+  const dialogue = cbdb.prepare('SELECT * FROM case_dialogue ORDER BY case_id, sequence_no').all();
+  const dialogueRows = dialogue
+    .filter(d => caseIdMap.has(d.case_id))
+    .map(d => ({ case_id: caseIdMap.get(d.case_id), sequence_no: d.sequence_no, speaker: d.speaker, dialogue_text: d.dialogue_text }));
+  if (dialogueRows.length) {
+    const { error } = await supabaseAdmin.from('case_dialogue').insert(dialogueRows);
+    if (error) console.error(`Failed to migrate dialogue: ${error.message}`);
   }
+  console.log(`Migrated ${dialogueRows.length}/${dialogue.length} dialogue lines.`);
 
-  const notes = cbdb.prepare('SELECT * FROM case_notes').all();
-  for (const n of notes) {
-    await pg.query(
-      `INSERT INTO case_notes (note_id, case_id, note_category, note_text, sort_order) VALUES ($1,$2,$3,$4,$5)`,
-      [n.note_id, n.case_id, n.note_category, n.note_text, n.sort_order]
-    );
+  const notes = cbdb.prepare('SELECT * FROM case_notes ORDER BY case_id, sort_order').all();
+  const noteRows = notes
+    .filter(n => caseIdMap.has(n.case_id))
+    .map(n => ({ case_id: caseIdMap.get(n.case_id), note_category: n.note_category, note_text: n.note_text, sort_order: n.sort_order }));
+  if (noteRows.length) {
+    const { error } = await supabaseAdmin.from('case_notes').insert(noteRows);
+    if (error) console.error(`Failed to migrate notes: ${error.message}`);
   }
-
-  if (cases.length) await resyncSequence(pg, 'cases', 'case_id');
-  if (dialogue.length) await resyncSequence(pg, 'case_dialogue', 'dialogue_id');
-  if (notes.length) await resyncSequence(pg, 'case_notes', 'note_id');
-
-  console.log(`Migrated ${cases.length} casebook cases, ${dialogue.length} dialogue lines, ${notes.length} notes.`);
+  console.log(`Migrated ${noteRows.length}/${notes.length} notes.`);
 }
 
 async function migrateUsers(cbdb) {
   const users = cbdb.prepare('SELECT * FROM users').all();
-  const idMap = new Map(); // old integer id -> new Supabase Auth uuid
+  const userIdMap = new Map(); // old integer id -> new Supabase Auth uuid
   const newPasswords = [];
 
   for (const u of users) {
@@ -97,36 +101,38 @@ async function migrateUsers(cbdb) {
       console.error(`Failed to create user ${email}: ${error.message}`);
       continue;
     }
-    await supabaseAdmin.from('profiles').insert({ id: created.user.id, email, name: u.name, role: u.role });
-    idMap.set(u.id, created.user.id);
+    const { error: profileError } = await supabaseAdmin.from('profiles').insert({ id: created.user.id, email, name: u.name, role: u.role });
+    if (profileError) { console.error(`Failed to insert profile for ${email}: ${profileError.message}`); continue; }
+    userIdMap.set(u.id, created.user.id);
     if (!isAdmin) newPasswords.push({ email, password });
   }
 
-  console.log(`Migrated ${idMap.size}/${users.length} users.`);
-  return { idMap, newPasswords };
+  console.log(`Migrated ${userIdMap.size}/${users.length} users.`);
+  return { userIdMap, newPasswords };
 }
 
-async function migrateProgress(pg, cbdb, idMap) {
+async function migrateProgress(cbdb, userIdMap, caseIdMap) {
   const rows = cbdb.prepare('SELECT * FROM case_progress').all();
-  let migrated = 0;
-  for (const r of rows) {
-    const newUserId = idMap.get(r.user_id);
-    if (!newUserId) continue;
-    await pg.query(
-      `INSERT INTO case_progress (user_id, case_id, status, reaction, personal_notes) VALUES ($1,$2,$3,$4,$5)`,
-      [newUserId, r.case_id, r.status, r.reaction, r.personal_notes ?? '']
-    );
-    migrated++;
+  const progressRows = rows
+    .filter(r => userIdMap.has(r.user_id) && caseIdMap.has(r.case_id))
+    .map(r => ({
+      user_id: userIdMap.get(r.user_id), case_id: caseIdMap.get(r.case_id),
+      status: r.status, reaction: r.reaction, personal_notes: r.personal_notes ?? '',
+    }));
+  if (progressRows.length) {
+    const { error } = await supabaseAdmin.from('case_progress').insert(progressRows);
+    if (error) console.error(`Failed to migrate progress rows: ${error.message}`);
   }
-  console.log(`Migrated ${migrated}/${rows.length} progress rows.`);
+  console.log(`Migrated ${progressRows.length}/${rows.length} progress rows.`);
 }
 
-async function migrateDiagrams(cbdb) {
+async function migrateDiagrams(cbdb, caseIdMap) {
   const diagramsDir = path.join(__dirname, '..', 'diagrams');
   const rows = cbdb.prepare('SELECT * FROM case_diagrams').all();
   let migrated = 0;
 
   for (const d of rows) {
+    if (!caseIdMap.has(d.case_id)) continue;
     const filePath = path.join(diagramsDir, d.image_path);
     if (!fs.existsSync(filePath)) {
       console.warn(`Skipping missing diagram file: ${d.image_path}`);
@@ -140,7 +146,7 @@ async function migrateDiagrams(cbdb) {
     }
     const { data: { publicUrl } } = supabaseAdmin.storage.from('diagrams').getPublicUrl(d.image_path);
     const { error: insertError } = await supabaseAdmin.from('case_diagrams').insert({
-      diagram_id: d.diagram_id, case_id: d.case_id, framework_id: d.framework_id, image_path: publicUrl, diagram_order: d.diagram_order,
+      case_id: caseIdMap.get(d.case_id), framework_id: null, image_path: publicUrl, diagram_order: d.diagram_order,
     });
     if (insertError) {
       console.error(`Failed to insert case_diagrams row for ${d.image_path}: ${insertError.message}`);
@@ -153,23 +159,21 @@ async function migrateDiagrams(cbdb) {
 }
 
 async function main() {
-  const pg = new Client({ connectionString: SUPABASE_DB_URL });
-  await pg.connect();
+  await assertSchemaApplied();
+
+  const { error: bucketError } = await supabaseAdmin.storage.createBucket('diagrams', { public: true });
+  if (bucketError && !/already exists/i.test(bucketError.message)) throw bucketError;
 
   const db = new Database(path.join(__dirname, '..', 'cases.db'), { readonly: true });
   const cbdb = new Database(path.join(__dirname, '..', 'casebook.db'), { readonly: true });
 
   try {
-    await applySchema(pg);
-
-    const { error: bucketError } = await supabaseAdmin.storage.createBucket('diagrams', { public: true });
-    if (bucketError && !/already exists/i.test(bucketError.message)) throw bucketError;
-
-    await migratePersonalCases(pg, db);
-    await migrateCasebook(pg, cbdb);
-    const { idMap, newPasswords } = await migrateUsers(cbdb);
-    await migrateProgress(pg, cbdb, idMap);
-    await migrateDiagrams(cbdb);
+    await migratePersonalCases(db);
+    const caseIdMap = await migrateCasebookCases(cbdb);
+    await migrateDialogueAndNotes(cbdb, caseIdMap);
+    const { userIdMap, newPasswords } = await migrateUsers(cbdb);
+    await migrateProgress(cbdb, userIdMap, caseIdMap);
+    await migrateDiagrams(cbdb, caseIdMap);
 
     console.log('\ndone');
     if (newPasswords.length) {
@@ -179,7 +183,6 @@ async function main() {
   } finally {
     db.close();
     cbdb.close();
-    await pg.end();
   }
 }
 
