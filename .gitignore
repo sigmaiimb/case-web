@@ -5,3 +5,6 @@ client/dist/
 diagrams/
 .env
 *.pdf
+.vercel
+.env*
+.claude/settings.local.json
